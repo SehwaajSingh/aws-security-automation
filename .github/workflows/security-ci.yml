@@ -13,7 +13,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 🔍 SECURITY SCAN (Secrets + misconfig)
+    # 🔍 Secret Scan (fail fast)
+    - name: Scan for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: .
+
+    # 🔍 Vulnerability & misconfig scan
     - name: Run Trivy Security Scan
       uses: aquasecurity/trivy-action@master
       with:
@@ -22,7 +28,7 @@ jobs:
         severity: CRITICAL,HIGH
         exit-code: 1
 
-    # 🔐 AWS AUTH
+    # 🔐 AWS AUTH (only after scans pass)
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -30,7 +36,7 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    # 🚀 DEPLOY LAMBDA (only if scan passes) 
+    # 🚀 DEPLOY
     - name: Deploy Lambda Function
       run: |
         zip function.zip lambda/lambda_function.py
