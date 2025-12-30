@@ -80,7 +80,7 @@ def lambda_handler(event, context):
         except ClientError as e:
             logger.error(f"Error checking object ACLs for {bucket_name}: {e}")
 
-        # Send SNS Notification
+        # Send SNS notification
         message = f"Auto-remediation executed for S3 bucket: {bucket_name}\nActions:\n" + "\n".join(remediation_actions)
         sns.publish(
             TopicArn=SNS_TOPIC_ARN,
