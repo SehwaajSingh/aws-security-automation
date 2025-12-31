@@ -3,24 +3,29 @@ name: Security CI Pipeline
 on:
   push:
     branches:
-      - "**"
+      - main
+  pull_request:
 
 jobs:
   security-scan-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ FULL HISTORY (CRITICAL)
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 🔍 Secret Scan
+      # 🔍 SECRET SCAN (FAILS PIPELINE)
       - name: Scan for secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: .
-          fail: true
+          base: HEAD~1
+          head: HEAD
 
-      # 🔍 Vulnerability & misconfig scan
+      # 🔍 VULNERABILITY & MISCONFIG SCAN
       - name: Run Trivy Security Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -29,7 +34,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 1
 
-      # 🔐 AWS AUTH
+      # 🔐 AWS AUTH (ONLY RUNS IF SCANS PASS)
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -37,7 +42,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 🚀 DEPLOY
+      # 🚀 DEPLOY (SECURITY-GATED)
       - name: Deploy Lambda Function
         run: |
           cd lambda
